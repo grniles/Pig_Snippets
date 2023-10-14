@@ -1,0 +1,12 @@
+batters = LOAD 'hdfs:/user/maria_dev/pigtest/Batting.csv' using PigStorage(',');
+master = LOAD 'hdfs:/user/maria_dev/pigtest/Master.csv' using PigStorage(',');     
+realBatters = FILTER batters BY $1>0;
+batterData = FOREACH realBatters GENERATE $0 AS id, $1 AS year, $9 AS triples;
+masterData = FOREACH master GENERATE $0 AS id, $16 AS weight, $15 AS playerName;
+joinedBatters = JOIN batterData BY id, masterData BY id;
+filteredTriple = FILTER joinedBatters BY triples > 5 AND year == 2005;
+groupBatters = GROUP filteredTriple ALL;
+heaviest = FOREACH groupBatters GENERATE MAX(filteredTriple.weight) AS maxWeight;
+heavier = JOIN filteredTriple BY weight, heaviest BY maxWeight;
+chonkBoy = FOREACH heavier GENERATE playerName;
+DUMP chonkBoy;

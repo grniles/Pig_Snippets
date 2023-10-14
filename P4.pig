@@ -1,0 +1,14 @@
+batters = LOAD 'hdfs:/user/maria_dev/pigtest/Batting.csv' USING PigStorage(',');
+master = LOAD 'hdfs:/user/maria_dev/pigtest/Master.csv' USING PigStorage(',');
+realBatters = FILTER batters BY $1 > 0;
+batterData = FOREACH realBatters GENERATE $0 AS id, $7 AS hits;
+masterData = FOREACH master GENERATE $0 AS id, $2 AS birthMonth, $7 AS deathYear, $15 AS playerName, $18 AS bats;
+filteredMaster = FILTER masterData BY birthMonth == 10 AND deathYear == 2011 AND bats == 'R';
+joinData = JOIN batterData BY id, filteredMaster BY id;
+groupData = GROUP joinData BY (filteredMaster::id, filteredMaster::playerName);
+countHits = FOREACH groupData GENERATE group, COUNT(joinData.hits) AS totalHits;
+groupCount = GROUP countHits ALL;
+hits = FOREACH groupCount GENERATE MAX(countHits.totalHits) AS maxHits;
+joinHits = JOIN hits BY maxHits, countHits BY totalHits;
+name = FOREACH joinHits GENERATE group.filteredMaster::playerName;
+DUMP name;

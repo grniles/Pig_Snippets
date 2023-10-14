@@ -1,0 +1,13 @@
+batters = LOAD 'hdfs:/user/maria_dev/pigtest/Batting.csv' USING PigStorage(',');
+master = LOAD 'hdfs:/user/maria_dev/pigtest/Master.csv' USING PigStorage(',');
+realBatters = FILTER batters BY $1 > 0;
+batterData = FOREACH realBatters GENERATE $0 AS id, $1 AS year;
+masterData = FOREACH master GENERATE $0 AS id, $15 AS playerName;
+groupBatter = GROUP batterData BY (id, year);
+countBatters = FOREACH groupBatter GENERATE group, COUNT(batterData.id) AS counter;
+groupCount = GROUP countBatters ALL;
+maxTeams = FOREACH groupCount GENERATE MAX(countBatters.counter) AS maxCount;
+joinCount = JOIN maxTeams BY maxCount, countBatters BY counter;
+completeData = JOIN joinCount BY group.id, masterData BY id;
+most = FOREACH completeData GENERATE masterData::playerName;
+DUMP most;
